@@ -33,15 +33,21 @@ public class BTree {
 		
 		private int locInNode(int key) {
 			int i;
-			for (i = 0; i < keys.length; i++) {
-				if(keys[i] == key) return i;
+			for (i = 0; i < count; i++) {
+				if(keys[i] >= key) return i;
 			}
-			return i;
+			return count;
+		}
+		
+		private long getChild(int key) {
+			return children[key];
 		}
 		
 		private boolean isLeaf() {
 			return children[0] == 0;
 		}
+		
+		private int
 		
 	}
 	
@@ -96,7 +102,11 @@ public class BTree {
 	
 	public boolean search (int k) {
 		//if k	is	in	the	tree	return	true	otherwise	return	false
-		
+		BTreeNode n = root;
+		while(!n.isLeaf()) {
+			int loc = n.locInNode(k);
+			n = readNode(n.getChild(loc));
+		}
 		
 		
 	}
@@ -107,9 +117,7 @@ public class BTree {
 		public BTIterator (int low, int high) {
 			//an	iterator	that	can	be	used	to	find	all	the	keys,	k,	in	
 		 	//the	tree	such	that	low	<=	k	<=	high
-			while(!n.isLeaf()) {
-				
-			}
+			
 			
 			
 		}
