@@ -47,7 +47,16 @@ public class BTree {
 			return children[0] == 0;
 		}
 		
-		private int
+		private boolean inNode(int k) {
+			for (int i = 0; i < count; i++) {
+				if (keys[i] == k) return true;
+			}
+			return false;
+		}
+		
+		private boolean isFull() {
+			return count == keys.length;
+		}
 		
 	}
 	
@@ -94,7 +103,11 @@ public class BTree {
 	
 	public void insert (int k) {
 		//insert	a	new	key	with	value	k	into	the	tree
-		
+		if(!search(k)) {
+			while(!stack.empty()) {
+				
+			}
+		}
 		
 		
 	}
@@ -103,11 +116,13 @@ public class BTree {
 	public boolean search (int k) {
 		//if k	is	in	the	tree	return	true	otherwise	return	false
 		BTreeNode n = root;
+		stack.push(n);
 		while(!n.isLeaf()) {
 			int loc = n.locInNode(k);
 			n = readNode(n.getChild(loc));
+			stack.push(n);
 		}
-		
+		return n.inNode(k);
 		
 	}
 	
