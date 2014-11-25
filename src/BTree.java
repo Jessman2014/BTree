@@ -23,14 +23,6 @@ public class BTree {
 			location = loc;
 		}
 		
-		private void splitNonRoot() {
-			
-		}
-		
-		private void splitRoot() {
-			
-		}
-		
 		private int locInNode(int key) {
 			int i;
 			for (i = 0; i < count; i++) {
@@ -58,13 +50,29 @@ public class BTree {
 			return count == keys.length;
 		}
 		
+		private void insert(int k) {
+			keys[count++] = k;
+		}
+
+		public BTreeNode split() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		public long getLoc() {
+			// TODO Auto-generated method stub
+			return location;
+		}
+
+		public int firstKey() {
+			// TODO Auto-generated method stub
+			return keys[0];
+		}
 	}
 	
 	BTreeNode root;
-	int order;
+	int order, max, min;
 	RandomAccessFile r;
-	private final int M;
-	private final int N;
 	Stack<BTreeNode> stack;
 	
 	
@@ -97,22 +105,29 @@ public class BTree {
 	}
 	
 	private void setMaxMin() {
-		M = (order-1);
-		N = ((int)Math.ceil(order/2.0))-1;
+		max = (order-1);
+		min = ((int)Math.ceil(order/2.0))-1;
 	}
 	
 	public void insert (int k) {
 		//insert	a	new	key	with	value	k	into	the	tree
 		if(!search(k)) {
-			while(!stack.empty()) {
-				
-			}
+			insert(k, stack.pop(), 0);
 		}
-		
-		
 	}
 	
 	
+	private void insert(int k, BTreeNode pop, long newLoc) {
+		if(pop.isFull()) {
+			BTreeNode newChild = pop.split();
+			BTreeNode n = stack.pop();
+			n.setSplit();
+			insert(newChild.firstKey(), n, newChild.getLoc());
+		}
+		else 
+			pop.insert(k);
+	}
+
 	public boolean search (int k) {
 		//if k	is	in	the	tree	return	true	otherwise	return	false
 		BTreeNode n = root;
