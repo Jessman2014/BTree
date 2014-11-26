@@ -118,9 +118,28 @@ public class BTree {
 			split = true;
 		}
 
+		public boolean getSplit() {
+			return split;
+		}
+		
 		public void shiftArrayLeft() {
 			// TODO Auto-generated method stub
 			keys = Arrays.copyOfRange(keys, 1, count);
+		}
+
+		public long getLink() {
+			// TODO Auto-generated method stub
+			return children[order-1];
+		}
+
+		public boolean atEnd(int i) {
+			// TODO Auto-generated method stub
+			return i < count-1;
+		}
+
+		public int getKey(int index) {
+			// TODO Auto-generated method stub
+			return keys[index];
 		}
 	}
 	
@@ -128,6 +147,8 @@ public class BTree {
 	int order, max, min;
 	RandomAccessFile r;
 	Stack<BTreeNode> stack;
+	private final int DATALEN = 4;
+	long head;
 	
 	
 	public BTree(String n, int ord) throws IOException {
@@ -143,7 +164,7 @@ public class BTree {
 		
 		r = new RandomAccessFile(f, "rw");
 		r.seek(0);
-		
+		r.
 		
 		
 	}
@@ -174,26 +195,28 @@ public class BTree {
 	
 	
 	private void insert(int k, BTreeNode pop, long newLoc) {
-		if(pop.isFull()) {
-			BTreeNode newChild = pop.split(k, newLoc);
-			if (stack.empty()) {
-				int rootKey = newChild.firstKey(); 
-				newChild.shiftArrayLeft();
-				int[] rootKeys = new int[max];
-				rootKeys[0] = rootKey;
-				long[] rootChildren = new long[order];
-				rootChildren[0] = pop.getLoc();
-				rootChildren[1] = newChild.getLoc();
-				root = new BTreeNode(rootKeys, rootChildren, 0, 1);
+		if (pop.getSplit()) {
+			if(pop.isFull()) {
+				BTreeNode newChild = pop.split(k, newLoc);
+				if (stack.empty()) {
+					int rootKey = newChild.firstKey(); 
+					newChild.shiftArrayLeft();
+					int[] rootKeys = new int[max];
+					rootKeys[0] = rootKey;
+					long[] rootChildren = new long[order];
+					rootChildren[0] = pop.getLoc();
+					rootChildren[1] = newChild.getLoc();
+					root = new BTreeNode(rootKeys, rootChildren, 0, 1);
+				}
+				else {
+					BTreeNode n = stack.pop();
+					n.setSplit();
+					insert(newChild.firstKey(), n, newChild.getLoc());
+				}
 			}
-			else {
-				BTreeNode n = stack.pop();
-				n.setSplit();
-				insert(newChild.firstKey(), n, newChild.getLoc());
-			}
+			else 
+				pop.insert(k);
 		}
-		else 
-			pop.insert(k);
 	}
 
 	public boolean search (int k) {
@@ -210,27 +233,37 @@ public class BTree {
 	}
 	
 	public class BTIterator implements Iterator<Integer> {
-		BTreeNode n = root;
+		BTreeNode currentLeaf;
+		int highKey, index;
+		
 		
 		public BTIterator (int low, int high) {
 			//an	iterator	that	can	be	used	to	find	all	the	keys,	k,	in	
 		 	//the	tree	such	that	low	<=	k	<=	high
-			
-			
-			
+			search(low);
+			currentLeaf = stack.pop();
+			index = currentLeaf.locInNode(low);
+			highKey = high;
 		}
-		
 		
 		@Override
 		public boolean hasNext() {
-			return false;
+			if (currentLeaf.atEnd(index)) {
+				long nextLoc = currentLeaf.getLink();
+				if (nextLoc == 0)
+					return false;
+				currentLeaf = readNode(nextLoc);
+				index = 0;
+			}
+			return currentLeaf.getKey(index) <= highKey;
 		}
 
 		@Override
 		public Integer next() {
 			//PRE:	hasNext();
-			return null;
+			return currentLeaf.getKey(index++);
 		}
+		
 		public void remove () {
 			//op2onal	method	not	implemented	
 		}
