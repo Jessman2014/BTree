@@ -2,6 +2,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Stack;
 
@@ -15,12 +16,12 @@ public class BTree {
 		boolean split;
 		long location;
 		
-		BTreeNode(int ord, int c, long loc) {
-			count = c;
-			keys = new int[M];
-			children = new long[ord];
+		BTreeNode(int k) {
+			count = 1;
+			keys = new int[max];
+			children = new long[order];
 			split = false;
-			location = loc;
+			location = 0;
 		}
 		
 		BTreeNode(int[] k, long[] ch, long loc, int c) {
@@ -58,17 +59,48 @@ public class BTree {
 		}
 		
 		private void insert(int k) {
-			keys[count++] = k;
+			int l = locInNode(k);
+			int m = 0;
+			for (int i = 0; i < keys.length; i++) {
+				if (i == l) {
+					keys[i] = k;
+					m--;
+				}
+				else
+					keys[i] = keys[i+m];
+			}
+			count--;
 		}
 
-		public BTreeNode split() {
+		public BTreeNode split(int k, long newLoc) {
 			// TODO Auto-generated method stub
-			if (isLeaf()) {
-				
+			int l = locInNode(k);
+			int[] newKeys = new int[order];
+			int m = 0;
+			for (int i = 0; i < newKeys.length; i++) {
+				if (i == l) {
+					newKeys[i] = k;
+					m--;
+				}
+				else
+					newKeys[i] = keys[i+m];
 			}
-			
-			
-			return null;
+			keys = Arrays.copyOfRange(newKeys, 0, min);
+			newKeys = Arrays.copyOfRange(newKeys, min, order);
+			long[] newChildren = new long[order+1];
+			m = 0;
+			for (int i = 0; i < newChildren.length; i++) {
+				if (i == l) {
+					newChildren[i] = newLoc;
+					m--;
+				}
+				else
+					newChildren[i] = children[i+m];
+			}
+			children = Arrays.copyOfRange(newChildren, 0, min+1);
+			newChildren = Arrays.copyOfRange(newChildren, min+1, order+1);
+			count = min;
+			return new BTreeNode(newKeys, newChildren, 0, min+1);
 		}
 
 		public long getLoc() {
@@ -88,9 +120,7 @@ public class BTree {
 
 		public void shiftArrayLeft() {
 			// TODO Auto-generated method stub
-			for (int i = 0; i < count-1; i++) {
-				keys[i] = keys[i+1];
-			}
+			keys = Arrays.copyOfRange(keys, 1, count);
 		}
 	}
 	
@@ -108,11 +138,11 @@ public class BTree {
 		setMaxMin();
 		stack = new Stack<>();
 		
-		
 		File f = new File(n);
 		if(f.exists()) f.delete();
 		
 		r = new RandomAccessFile(f, "rw");
+		r.seek(0);
 		
 		
 		
@@ -136,6 +166,8 @@ public class BTree {
 	public void insert (int k) {
 		//insert	a	new	key	with	value	k	into	the	tree
 		if(!search(k)) {
+			if (stack.empty())
+				root = new BTreeNode(k);
 			insert(k, stack.pop(), 0);
 		}
 	}
@@ -143,7 +175,7 @@ public class BTree {
 	
 	private void insert(int k, BTreeNode pop, long newLoc) {
 		if(pop.isFull()) {
-			BTreeNode newChild = pop.split();
+			BTreeNode newChild = pop.split(k, newLoc);
 			if (stack.empty()) {
 				int rootKey = newChild.firstKey(); 
 				newChild.shiftArrayLeft();
