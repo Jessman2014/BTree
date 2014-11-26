@@ -23,6 +23,13 @@ public class BTree {
 			location = loc;
 		}
 		
+		BTreeNode(int[] k, long[] ch, long loc, int c) {
+			count = c;
+			keys = k;
+			children = ch;
+			location = loc;
+		}
+		
 		private int locInNode(int key) {
 			int i;
 			for (i = 0; i < count; i++) {
@@ -56,6 +63,11 @@ public class BTree {
 
 		public BTreeNode split() {
 			// TODO Auto-generated method stub
+			if (isLeaf()) {
+				
+			}
+			
+			
 			return null;
 		}
 
@@ -67,6 +79,18 @@ public class BTree {
 		public int firstKey() {
 			// TODO Auto-generated method stub
 			return keys[0];
+		}
+
+		public void setSplit() {
+			// TODO Auto-generated method stub
+			split = true;
+		}
+
+		public void shiftArrayLeft() {
+			// TODO Auto-generated method stub
+			for (int i = 0; i < count-1; i++) {
+				keys[i] = keys[i+1];
+			}
 		}
 	}
 	
@@ -120,9 +144,21 @@ public class BTree {
 	private void insert(int k, BTreeNode pop, long newLoc) {
 		if(pop.isFull()) {
 			BTreeNode newChild = pop.split();
-			BTreeNode n = stack.pop();
-			n.setSplit();
-			insert(newChild.firstKey(), n, newChild.getLoc());
+			if (stack.empty()) {
+				int rootKey = newChild.firstKey(); 
+				newChild.shiftArrayLeft();
+				int[] rootKeys = new int[max];
+				rootKeys[0] = rootKey;
+				long[] rootChildren = new long[order];
+				rootChildren[0] = pop.getLoc();
+				rootChildren[1] = newChild.getLoc();
+				root = new BTreeNode(rootKeys, rootChildren, 0, 1);
+			}
+			else {
+				BTreeNode n = stack.pop();
+				n.setSplit();
+				insert(newChild.firstKey(), n, newChild.getLoc());
+			}
 		}
 		else 
 			pop.insert(k);
