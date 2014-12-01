@@ -9,19 +9,19 @@ import java.util.Stack;
 
 public class BTree {
 	
-	private class BTreeNode {
+	private class BTreeNode{
 		int count;
 		int[] keys;
 		long[] children;
 		boolean split;
 		long location;
 		
-		BTreeNode(int k) {
+		BTreeNode(int k) throws IOException {
 			count = 1;
 			keys = new int[max];
 			children = new long[order];
 			split = false;
-			location = 0;
+			location = r.length();
 		}
 		
 		BTreeNode(int[] k, long[] ch, long loc, int c) {
@@ -72,7 +72,7 @@ public class BTree {
 			count--;
 		}
 
-		public BTreeNode split(int k, long newLoc) {
+		public BTreeNode split(int k, long newLoc) throws IOException {
 			// TODO Auto-generated method stub
 			int l = locInNode(k);
 			int[] newKeys = new int[order];
@@ -100,7 +100,7 @@ public class BTree {
 			children = Arrays.copyOfRange(newChildren, 0, min+1);
 			newChildren = Arrays.copyOfRange(newChildren, min+1, order+1);
 			count = min;
-			return new BTreeNode(newKeys, newChildren, 0, min+1);
+			return new BTreeNode(newKeys, newChildren, r.length(), min+1);
 		}
 
 		public long getLoc() {
@@ -144,11 +144,11 @@ public class BTree {
 	}
 	
 	BTreeNode root;
-	int order, max, min;
+	int order, max, min, dataLen;
 	RandomAccessFile r;
 	Stack<BTreeNode> stack;
-	private final int DATALEN = 4;
 	long head;
+	String name;
 	
 	
 	public BTree(String n, int ord) throws IOException {
@@ -158,25 +158,32 @@ public class BTree {
 		order = ord;
 		setMaxMin();
 		stack = new Stack<>();
-		
+		name = n;
 		File f = new File(n);
 		if(f.exists()) f.delete();
-		
-		r = new RandomAccessFile(f, "rw");
+		dataLen = order*12;
+		r = new RandomAccessFile(name, "rw");
 		r.seek(0);
-		r.
-		
-		
+		r.writeInt(dataLen);
+		r.writeInt(order);
+		head = 0;
+		r.writeLong(head);
 	}
 	
-	public BTree (String n) throws FileNotFoundException {
+	public BTree (String n) throws IOException {
 		//open	an	exis2ng	B+Tree	
 		//n	is	the	name	of	the	file	that	stores	the	tree	
 		//if	a	file	with	name	n	does	not	exists	throw	a	RunTimeExcep2on	
 		File f = new File(n);
-		if(!f.exists()) throw new RuntimeException();
-		r = new RandomAccessFile(f, "rw");
-		
+		if(!f.exists()) throw new RuntimeException("The	BTree does not exist");
+		name = n;
+		r = new RandomAccessFile(name, "rw");
+		r.seek(0);
+		dataLen = r.readInt();
+		order = r.readInt();
+		head = r.readLong();
+		setMaxMin();
+		stack = new Stack<>();
 	}
 	
 	private void setMaxMin() {
@@ -184,7 +191,7 @@ public class BTree {
 		min = ((int)Math.ceil(order/2.0))-1;
 	}
 	
-	public void insert (int k) {
+	public void insert (int k) throws IOException {
 		//insert	a	new	key	with	value	k	into	the	tree
 		if(!search(k)) {
 			if (stack.empty())
@@ -194,7 +201,7 @@ public class BTree {
 	}
 	
 	
-	private void insert(int k, BTreeNode pop, long newLoc) {
+	private void insert(int k, BTreeNode pop, long newLoc) throws IOException {
 		if (pop.getSplit()) {
 			if(pop.isFull()) {
 				BTreeNode newChild = pop.split(k, newLoc);
