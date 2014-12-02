@@ -15,7 +15,7 @@ public class BTree {
 		long[] children;
 		long location;
 		
-		BTreeNode(int k, long loc) throws IOException {
+		BTreeNode(int k, long loc) {
 			count = 1;
 			keys = new int[max];
 			keys[0] = k;
@@ -37,10 +37,6 @@ public class BTree {
 				if(keys[i] >= key) return i;
 			}
 			return count;
-		}
-		
-		private boolean isLeaf() {
-			return children[0] == 0;
 		}
 		
 		private boolean inNode(int k) {
@@ -68,8 +64,9 @@ public class BTree {
 			}
 			split = true;
 			BTreeNode n = null;
+			splitKey = k;
 			while(split && !stack.empty()) {
-				split(k);
+				split();
 				n = stack.pop();
 			}
 			if (split && stack.empty()) {
@@ -80,20 +77,19 @@ public class BTree {
 			
 		}
 
-		private void writeNode() {
-			// TODO Auto-generated method stub
-			
-		}
 
-		public void split(int k) throws IOException {
+		public void split() {
 			// TODO Auto-generated method stub
+			BTreeNode n;
+			long[] newChildren;
+			long loc = getFree();
 			
-			int l = locInNode(k);
+			int l = locInNode(splitKey);
 			int[] newKeys = new int[order];
 			int m = 0;
 			for (int i = 0; i < newKeys.length; i++) {
 				if (i == l) {
-					newKeys[i] = k;
+					newKeys[i] = splitKey;
 					m--;
 				}
 				else
@@ -102,11 +98,11 @@ public class BTree {
 			keys = Arrays.copyOfRange(newKeys, 0, min);
 			newKeys = Arrays.copyOfRange(newKeys, min, order);
 			if (children[0] != 0) {
-				long[] newChildren = new long[order+1];
+				newChildren = new long[order+1];
 				m = 0;
 				for (int i = 0; i < newChildren.length; i++) {
 					if (i == l) {
-						newChildren[i] = newLoc;
+						newChildren[i] = splitChild;
 						m--;
 					}
 					else
@@ -117,42 +113,35 @@ public class BTree {
 				newChildren = Arrays.copyOfRange(newChildren, min+1, order+1);
 			}
 			else {
-				children[max] = 
+				newChildren = new long[order];
+				newChildren[max] = children[max];
+				children[max] = loc;
 			}
 			count = min;
 			writeNode();
-			BTreeNode n = new BTreeNode(newKeys, newChildren, r.length(), min+1);
+			n = new BTreeNode(newKeys, newChildren, loc, min+1);
 			n.writeNode();
+			
+			split = true;
+			splitKey = n.keys[0];
+			splitChild = loc;
 		}
 
-		public long getLoc() {
+		private void writeNode() {
 			// TODO Auto-generated method stub
-			return location;
-		}
-
-		public int firstKey() {
-			// TODO Auto-generated method stub
-			return keys[0];
-		}
-
-		public void shiftArrayLeft() {
-			// TODO Auto-generated method stub
-			keys = Arrays.copyOfRange(keys, 1, count);
-		}
-
-		public long getLink() {
-			// TODO Auto-generated method stub
-			return children[order-1];
-		}
-
-		public boolean atEnd(int i) {
-			// TODO Auto-generated method stub
-			return i < count-1;
-		}
-
-		public int getKey(int index) {
-			// TODO Auto-generated method stub
-			return keys[index];
+			try {
+				r.seek(location);
+				r.writeInt(count);
+				for (int i = 0; i < keys.length; i++) {
+					r.writeInt(keys[i]);
+				}
+				for (int i = 0; i < children.length; i++) {
+					r.writeLong(children[i]);
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -163,7 +152,7 @@ public class BTree {
 	long head, splitChild;
 	String name;
 	boolean split;
-	private static final long HEADER = 8;
+	final long HEADER = 8;
 	
 	
 	public BTree(String n, int ord) throws IOException {
@@ -208,11 +197,22 @@ public class BTree {
 		min = ((int)Math.ceil(order/2.0))-1;
 	}
 	
+	private long getFree() {
+		long loc = 0;
+		try {
+			loc = r.length();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return loc;
+	}
+	
 	public void insert (int k) throws IOException {
 		//insert	a	new	key	with	value	k	into	the	tree
 		
 		if (head == 0){
-			long loc = r.length();
+			long loc = getFree();
 			root = new BTreeNode(k, loc);
 			head = loc;
 			r.seek(HEADER);
