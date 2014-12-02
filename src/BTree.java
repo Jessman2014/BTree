@@ -13,15 +13,15 @@ public class BTree {
 		int count;
 		int[] keys;
 		long[] children;
-		boolean split;
 		long location;
 		
-		BTreeNode(int k) throws IOException {
+		BTreeNode(int k, long loc) throws IOException {
 			count = 1;
 			keys = new int[max];
+			keys[0] = k;
 			children = new long[order];
 			split = false;
-			location = r.length();
+			location = loc;
 		}
 		
 		BTreeNode(int[] k, long[] ch, long loc, int c) {
@@ -39,10 +39,6 @@ public class BTree {
 			return count;
 		}
 		
-		private long getChild(int key) {
-			return children[key];
-		}
-		
 		private boolean isLeaf() {
 			return children[0] == 0;
 		}
@@ -54,26 +50,44 @@ public class BTree {
 			return false;
 		}
 		
-		private boolean isFull() {
-			return count == keys.length;
-		}
-		
 		private void insert(int k) {
-			int l = locInNode(k);
-			int m = 0;
-			for (int i = 0; i < keys.length; i++) {
-				if (i == l) {
-					keys[i] = k;
-					m--;
+			if (count != max) {
+				int l = locInNode(k);
+				int m = 0;
+				for (int i = 0; i < keys.length; i++) {
+					if (i == l) {
+						keys[i] = k;
+						m--;
+					}
+					else
+						keys[i] = keys[i+m];
 				}
-				else
-					keys[i] = keys[i+m];
+				count++;
+				writeNode();
+				return;
 			}
-			count--;
+			split = true;
+			BTreeNode n = null;
+			while(split && !stack.empty()) {
+				split(k);
+				n = stack.pop();
+			}
+			if (split && stack.empty()) {
+				root = new BTreeNode(splitKey, root.location);
+				root.children[0] = n.location;
+				root.children[1] = splitChild;
+			}
+			
 		}
 
-		public BTreeNode split(int k, long newLoc) throws IOException {
+		private void writeNode() {
 			// TODO Auto-generated method stub
+			
+		}
+
+		public void split(int k) throws IOException {
+			// TODO Auto-generated method stub
+			
 			int l = locInNode(k);
 			int[] newKeys = new int[order];
 			int m = 0;
@@ -87,20 +101,28 @@ public class BTree {
 			}
 			keys = Arrays.copyOfRange(newKeys, 0, min);
 			newKeys = Arrays.copyOfRange(newKeys, min, order);
-			long[] newChildren = new long[order+1];
-			m = 0;
-			for (int i = 0; i < newChildren.length; i++) {
-				if (i == l) {
-					newChildren[i] = newLoc;
-					m--;
+			if (children[0] != 0) {
+				long[] newChildren = new long[order+1];
+				m = 0;
+				for (int i = 0; i < newChildren.length; i++) {
+					if (i == l) {
+						newChildren[i] = newLoc;
+						m--;
+					}
+					else
+						newChildren[i] = children[i+m];
 				}
-				else
-					newChildren[i] = children[i+m];
+				
+				children = Arrays.copyOfRange(newChildren, 0, min+1);
+				newChildren = Arrays.copyOfRange(newChildren, min+1, order+1);
 			}
-			children = Arrays.copyOfRange(newChildren, 0, min+1);
-			newChildren = Arrays.copyOfRange(newChildren, min+1, order+1);
+			else {
+				children[max] = 
+			}
 			count = min;
-			return new BTreeNode(newKeys, newChildren, r.length(), min+1);
+			writeNode();
+			BTreeNode n = new BTreeNode(newKeys, newChildren, r.length(), min+1);
+			n.writeNode();
 		}
 
 		public long getLoc() {
@@ -113,15 +135,6 @@ public class BTree {
 			return keys[0];
 		}
 
-		public void setSplit() {
-			// TODO Auto-generated method stub
-			split = true;
-		}
-
-		public boolean getSplit() {
-			return split;
-		}
-		
 		public void shiftArrayLeft() {
 			// TODO Auto-generated method stub
 			keys = Arrays.copyOfRange(keys, 1, count);
@@ -144,11 +157,13 @@ public class BTree {
 	}
 	
 	BTreeNode root;
-	int order, max, min, dataLen;
+	int order, max, min, dataLen, splitKey;
 	RandomAccessFile r;
 	Stack<BTreeNode> stack;
-	long head;
+	long head, splitChild;
 	String name;
+	boolean split;
+	private static final long HEADER = 8;
 	
 	
 	public BTree(String n, int ord) throws IOException {
@@ -156,6 +171,7 @@ public class BTree {
 		//n	is	the	name	of	the	file	used	to	store	the	tree	
 		//if	a	file	with	name	n	already	exists	it	should	be	deleted	
 		order = ord;
+		split = false;
 		setMaxMin();
 		stack = new Stack<>();
 		name = n;
@@ -174,6 +190,7 @@ public class BTree {
 		//open	an	exis2ng	B+Tree	
 		//n	is	the	name	of	the	file	that	stores	the	tree	
 		//if	a	file	with	name	n	does	not	exists	throw	a	RunTimeExcep2on	
+		split = false;
 		File f = new File(n);
 		if(!f.exists()) throw new RuntimeException("The	BTree does not exist");
 		name = n;
@@ -193,14 +210,22 @@ public class BTree {
 	
 	public void insert (int k) throws IOException {
 		//insert	a	new	key	with	value	k	into	the	tree
-		if(!search(k)) {
-			if (stack.empty())
-				root = new BTreeNode(k);
-			insert(k, stack.pop(), 0);
+		
+		if (head == 0){
+			long loc = r.length();
+			root = new BTreeNode(k, loc);
+			head = loc;
+			r.seek(HEADER);
+			r.writeLong(head);
+			return;
 		}
+		search(k);
+		BTreeNode n = stack.pop();
+		n.insert(k);
+		
 	}
 	
-	
+	/*
 	private void insert(int k, BTreeNode pop, long newLoc) throws IOException {
 		if (pop.getSplit()) {
 			if(pop.isFull()) {
@@ -225,7 +250,7 @@ public class BTree {
 				pop.insert(k);
 		}
 	}
-
+*/
 	public boolean search (int k) {
 		//if k	is	in	the	tree	return	true	otherwise	return	false
 		BTreeNode n = root;
