@@ -159,10 +159,28 @@ public class BTree {
 				e.printStackTrace();
 			}
 		}
+
+		public void print() {
+			// TODO Auto-generated method stub
+			System.out.println ("Level: " + level);
+			System.out.println ("Count: " + count);
+			System.out.println ("Location: " + location);
+			System.out.println ("Split: " + split + ", splitKey: " + splitKey + ", splitChild: " + splitChild);
+			System.out.print("Keys: ");
+			for (int i = 0; i < keys.length; i++) {
+				System.out.print (keys[i] + ", ");
+			}
+			System.out.println();
+			System.out.print("Children: ");
+			for (int i = 0; i < children.length; i++) {
+				System.out.print (children[i] + ", ");
+			}
+		}
 	}
 	
 	BTreeNode root;
 	int order, max, min, dataLen, splitKey;
+	int level = 0;
 	RandomAccessFile r;
 	Stack<Long> stack;
 	long head, splitChild;
@@ -288,7 +306,32 @@ public class BTree {
 	}
 	
 	public void print() {
-		
+		if (head != 0) {
+			print(root);
+		}
+	}
+	
+	private void print(BTreeNode b) {
+		b.print();
+		if (b.children[0] == 0) {
+			long loc = b.children[max];
+			if (loc != 0) {
+				BTreeNode n = new BTreeNode(loc);
+				n.readNode();
+				print(n);
+			}
+		}
+		else {
+			level++;
+			for (int i = 0; i <= b.count; i++) {
+				BTreeNode n = new BTreeNode(b.children[i]);
+				n.readNode();
+				n.print();
+			}
+			BTreeNode n = new BTreeNode(b.children[0]);
+			n.readNode();
+			print(n);
+		}
 	}
 	
 	public class BTIterator implements Iterator<Integer> {
