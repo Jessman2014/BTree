@@ -1,5 +1,4 @@
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
@@ -16,7 +15,7 @@ public class BTree {
 		long location;
 		
 		BTreeNode(long loc) {
-			count = 1;
+			count = 0;
 			keys = new int[max];
 			children = new long[order];
 			split = false;
@@ -47,16 +46,12 @@ public class BTree {
 		
 		private void insert(int k) {
 			if (count != max) {
-				int l = locInNode(k);
-				int m = 0;
-				for (int i = 0; i < keys.length; i++) {
-					if (i == l) {
-						keys[i] = k;
-						m--;
-					}
-					else
-						keys[i] = keys[i+m];
+				int i = count-1;
+				while (i >= 0 && keys[i] > k) {
+					keys[i+1] = keys[i];
+					i--;
 				}
+				keys[i+1] = k;
 				count++;
 				writeNode();
 				return;
@@ -81,7 +76,6 @@ public class BTree {
 
 
 		public void split() {
-			// TODO Auto-generated method stub
 			BTreeNode n;
 			long[] newChildren;
 			long loc = getFree();
@@ -97,6 +91,7 @@ public class BTree {
 				else
 					newKeys[i] = keys[i+m];
 			}
+			
 			keys = Arrays.copyOfRange(newKeys, 0, min);
 			newKeys = Arrays.copyOfRange(newKeys, min, order);
 			if (children[0] != 0) {
@@ -392,7 +387,19 @@ public class BTree {
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-
+		try {
+			BTree m = new BTree("file.txt", 5);
+			m.insert(100);
+			m.insert(50);
+			m.insert(75);
+			m.insert(125);
+			m.insert(25);
+			m.print();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
 
 }
