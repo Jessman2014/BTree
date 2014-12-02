@@ -15,10 +15,9 @@ public class BTree {
 		long[] children;
 		long location;
 		
-		BTreeNode(int k, long loc) {
+		BTreeNode(long loc) {
 			count = 1;
 			keys = new int[max];
-			keys[0] = k;
 			children = new long[order];
 			split = false;
 			location = loc;
@@ -143,12 +142,29 @@ public class BTree {
 				e.printStackTrace();
 			}
 		}
+
+		public void readNode() {
+			// TODO Auto-generated method stub
+			try {
+				r.seek(location);
+				count = r.readInt();
+				for (int i = 0; i < keys.length; i++) {
+					keys[i] = r.readInt();
+				}
+				for (int i = 0; i < children.length; i++) {
+					children[i] = r.readLong();
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 	
 	BTreeNode root;
 	int order, max, min, dataLen, splitKey;
 	RandomAccessFile r;
-	Stack<BTreeNode> stack;
+	Stack<Long> stack;
 	long head, splitChild;
 	String name;
 	boolean split;
@@ -213,14 +229,16 @@ public class BTree {
 		
 		if (head == 0){
 			long loc = getFree();
-			root = new BTreeNode(k, loc);
+			root = new BTreeNode(loc);
+			root.insert(k);
 			head = loc;
 			r.seek(HEADER);
 			r.writeLong(head);
 			return;
 		}
 		search(k);
-		BTreeNode n = stack.pop();
+		BTreeNode n = new BTreeNode(stack.pop());
+		n.readNode();
 		n.insert(k);
 		
 	}
@@ -253,14 +271,23 @@ public class BTree {
 */
 	public boolean search (int k) {
 		//if k	is	in	the	tree	return	true	otherwise	return	false
-		BTreeNode n = root;
-		stack.push(n);
-		while(!n.isLeaf()) {
-			int loc = n.locInNode(k);
-			n = readNode(n.getChild(loc));
-			stack.push(n);
+		if (head != 0) {
+			BTreeNode n = root;
+			n.readNode();
+			stack.push(n.location);
+			while(n.children[0] != 0) {
+				int loc = n.locInNode(k);
+				long child = n.children[loc];
+				stack.push(child);
+				n = new BTreeNode(child);
+				n.readNode();
+			}
+			return n.inNode(k);
 		}
-		return n.inNode(k);
+		return false;
+	}
+	
+	public void print() {
 		
 	}
 	
