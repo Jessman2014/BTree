@@ -66,10 +66,13 @@ public class BTree {
 			splitKey = k;
 			while(split && !stack.empty()) {
 				split();
-				n = stack.pop();
+				long l = stack.pop();
+				n = new BTreeNode(l);
+				n.readNode();
 			}
 			if (split && stack.empty()) {
-				root = new BTreeNode(splitKey, root.location);
+				root = new BTreeNode(root.location);
+				root.insert(splitKey);
 				root.children[0] = n.location;
 				root.children[1] = splitChild;
 			}
@@ -343,27 +346,30 @@ public class BTree {
 			//an	iterator	that	can	be	used	to	find	all	the	keys,	k,	in	
 		 	//the	tree	such	that	low	<=	k	<=	high
 			search(low);
-			currentLeaf = stack.pop();
+			long loc = stack.pop();
+			currentLeaf = new BTreeNode(loc);
+			currentLeaf.readNode();
 			index = currentLeaf.locInNode(low);
 			highKey = high;
 		}
 		
 		@Override
 		public boolean hasNext() {
-			if (currentLeaf.atEnd(index)) {
-				long nextLoc = currentLeaf.getLink();
+			if (index > currentLeaf.count) {
+				long nextLoc = currentLeaf.children[max];
 				if (nextLoc == 0)
 					return false;
-				currentLeaf = readNode(nextLoc);
+				currentLeaf = new BTreeNode(nextLoc);
+				currentLeaf.readNode();
 				index = 0;
 			}
-			return currentLeaf.getKey(index) <= highKey;
+			return currentLeaf.keys[index] <= highKey;
 		}
 
 		@Override
 		public Integer next() {
 			//PRE:	hasNext();
-			return currentLeaf.getKey(index++);
+			return currentLeaf.keys[index++];
 		}
 		
 		public void remove () {
