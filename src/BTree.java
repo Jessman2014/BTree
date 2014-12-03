@@ -18,7 +18,6 @@ public class BTree {
 			count = 0;
 			keys = new int[max];
 			children = new long[order];
-			split = false;
 			location = loc;
 		}
 		
@@ -92,7 +91,6 @@ public class BTree {
 			BTreeNode n;
 			long[] newChildren;
 			long loc = getFree();
-			int rootValue = 0;
 			
 			int l = locInNode(splitKey);
 			int[] newKeys = new int[order];
@@ -107,12 +105,9 @@ public class BTree {
 			}
 			
 			keys = Arrays.copyOfRange(newKeys, 0, min);
-			if (stack.empty()) {
-				rootValue = newKeys[min];
-				newKeys = Arrays.copyOfRange(newKeys, min+1, order);
-			}
-			else
-				newKeys = Arrays.copyOfRange(newKeys, min, order);
+			keys = Arrays.copyOf(keys, max);
+			newKeys = Arrays.copyOfRange(newKeys, min, order);
+			newKeys = Arrays.copyOf(newKeys, max);
 			if (children[0] != 0) {
 				newChildren = new long[order+1];
 				m = 0;
@@ -125,8 +120,10 @@ public class BTree {
 						newChildren[i] = children[i+m];
 				}
 				
-				children = Arrays.copyOfRange(newChildren, 0, min+1);
+				children = Arrays.copyOfRange(newChildren, 0, min+1); //add in padding
+				children = Arrays.copyOf(children, order);
 				newChildren = Arrays.copyOfRange(newChildren, min+1, order+1);
+				newChildren = Arrays.copyOf(newChildren, order);
 			}
 			else {
 				newChildren = new long[order];
@@ -135,10 +132,7 @@ public class BTree {
 			}
 			count = min;
 			writeNode();
-			if(stack.empty())
-				n = new BTreeNode(newKeys, newChildren, loc, min);
-			else
-				n = new BTreeNode(newKeys, newChildren, loc, min+1);
+			n = new BTreeNode(newKeys, newChildren, loc, min+1);
 			n.writeNode();
 			
 			split = true;
@@ -147,10 +141,11 @@ public class BTree {
 			
 			if (stack.empty()) {
 				BTreeNode newRoot = new BTreeNode(location);
-				newRoot.keys[0] = rootValue;
+				newRoot.keys[0] = newKeys[0];
 				location = getFree();
 				newRoot.children[0] = location;
 				newRoot.children[1] = loc;
+				newRoot.count = 1;
 				newRoot.writeNode();
 				writeNode();
 				root = newRoot;
@@ -171,8 +166,8 @@ public class BTree {
 				for (int i = 0; i < keys.length; i++) {
 					r.writeInt(keys[i]);
 				}
-				for (int i = 0; i < children.length; i++) {
-					r.writeLong(children[i]);
+				for (int j = 0; j < children.length; j++) {
+					r.writeLong(children[j]);
 				}
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -212,6 +207,7 @@ public class BTree {
 			for (int i = 0; i < children.length; i++) {
 				System.out.print (children[i] + ", ");
 			}
+			System.out.println();
 		}
 	}
 	
@@ -296,6 +292,7 @@ public class BTree {
 			n.readNode();
 			n.insert(k);
 		}
+		split = false;
 	}
 	
 	
@@ -331,15 +328,14 @@ public class BTree {
 	
 	private void print(BTreeNode b) {
 		b.print();
-		if (b.children[0] == 0) {
-			long loc = b.children[max];
+		if (b.children[0] != 0) {
+			/*long loc = b.children[max];
 			if (loc != 0) {
 				BTreeNode n = new BTreeNode(loc);
 				n.readNode();
 				print(n);
-			}
-		}
-		else {
+			}*/
+		
 			level++;
 			for (int i = 0; i <= b.count; i++) {
 				BTreeNode n = new BTreeNode(b.children[i]);
@@ -348,7 +344,8 @@ public class BTree {
 			}
 			BTreeNode n = new BTreeNode(b.children[0]);
 			n.readNode();
-			print(n);
+			if (n.children[0] != 0)
+				print(n);
 		}
 	}
 	
@@ -370,7 +367,7 @@ public class BTree {
 		
 		@Override
 		public boolean hasNext() {
-			if (index > currentLeaf.count) {
+			if (index >= currentLeaf.count) {
 				long nextLoc = currentLeaf.children[max];
 				if (nextLoc == 0)
 					return false;
@@ -378,13 +375,15 @@ public class BTree {
 				currentLeaf.readNode();
 				index = 0;
 			}
-			return currentLeaf.keys[index] <= highKey;
+			boolean t = currentLeaf.keys[index] <= highKey;
+			return t;
 		}
 
 		@Override
 		public Integer next() {
 			//PRE:	hasNext();
-			return currentLeaf.keys[index++];
+			Integer t = currentLeaf.keys[index++];
+			return t;
 		}
 		
 		public void remove () {
@@ -414,7 +413,12 @@ public class BTree {
 			m.insert(75);
 			m.insert(125);
 			m.insert(25);
-			m.print();
+			//m.print();
+			Iterator<Integer> it = m.iterator(15, 80);
+			while(it.hasNext()) {
+				System.out.print(it.next() + ", ");
+			}
+			m.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
