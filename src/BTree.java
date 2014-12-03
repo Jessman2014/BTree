@@ -44,6 +44,7 @@ public class BTree {
 			return false;
 		}
 		
+		
 		private void insert(int k) {
 			if (count != max) {
 				int i = count-1;
@@ -57,21 +58,32 @@ public class BTree {
 				return;
 			}
 			split = true;
-			BTreeNode n = null;
 			splitKey = k;
-			while(split && !stack.empty()) {
-				split();
-				long l = stack.pop();
-				n = new BTreeNode(l);
-				n.readNode();
+			splitChild = 0;
+			split();
+			
+		}
+		
+		private void insertNonLeaf(){
+			if (count != max) {
+				int i = count-1;
+				while (i >= 0 && keys[i] > splitKey) {
+					keys[i+1] = keys[i];
+					i--;
+				}
+				keys[i+1] = splitKey;
+				int j = count;
+				while(i >=  0 && j >= i) {
+					children[j+1] = children[j];
+					j--;
+				}
+				children[j+1] = splitChild;
+				count++;
+				writeNode();
+				return;
 			}
-			if (split && stack.empty()) {
-				root = new BTreeNode(root.location);
-				root.insert(splitKey);
-				root.children[0] = n.location;
-				root.children[1] = splitChild;
-				root.writeNode();
-			}
+			//add both splitchild and splitkey
+			split();
 			
 		}
 
@@ -80,6 +92,7 @@ public class BTree {
 			BTreeNode n;
 			long[] newChildren;
 			long loc = getFree();
+			int rootValue = 0;
 			
 			int l = locInNode(splitKey);
 			int[] newKeys = new int[order];
@@ -94,7 +107,12 @@ public class BTree {
 			}
 			
 			keys = Arrays.copyOfRange(newKeys, 0, min);
-			newKeys = Arrays.copyOfRange(newKeys, min, order);
+			if (stack.empty()) {
+				rootValue = newKeys[min];
+				newKeys = Arrays.copyOfRange(newKeys, min+1, order);
+			}
+			else
+				newKeys = Arrays.copyOfRange(newKeys, min, order);
 			if (children[0] != 0) {
 				newChildren = new long[order+1];
 				m = 0;
@@ -117,12 +135,32 @@ public class BTree {
 			}
 			count = min;
 			writeNode();
-			n = new BTreeNode(newKeys, newChildren, loc, min+1);
+			if(stack.empty())
+				n = new BTreeNode(newKeys, newChildren, loc, min);
+			else
+				n = new BTreeNode(newKeys, newChildren, loc, min+1);
 			n.writeNode();
 			
 			split = true;
 			splitKey = n.keys[0];
 			splitChild = loc;
+			
+			if (stack.empty()) {
+				BTreeNode newRoot = new BTreeNode(location);
+				newRoot.keys[0] = rootValue;
+				location = getFree();
+				newRoot.children[0] = location;
+				newRoot.children[1] = loc;
+				newRoot.writeNode();
+				writeNode();
+				root = newRoot;
+			}
+			else {
+				BTreeNode parent = new BTreeNode(stack.pop());
+				parent.readNode();
+				parent.insertNonLeaf();
+			}
+				
 		}
 
 		private void writeNode() {
