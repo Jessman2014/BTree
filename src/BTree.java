@@ -72,7 +72,7 @@ public class BTree {
 				}
 				keys[i+1] = splitKey;
 				int j = count;
-				while(i >=  0 && j >= i) {
+				while(j >=  0 && j > i) {
 					children[j+1] = children[j];
 					j--;
 				}
@@ -321,8 +321,11 @@ public class BTree {
 	
 	public void print() {
 		if (head != 0) {
-			if(root != null)
+			if(root != null) {
+				root.readNode();
 				print(root);
+			}
+				
 		}
 	}
 	
@@ -413,8 +416,15 @@ public class BTree {
 			m.insert(75);
 			m.insert(125);
 			m.insert(25);
-			//m.print();
-			Iterator<Integer> it = m.iterator(15, 80);
+			m.insert(30);
+			m.insert(60);
+			m.insert(150);
+			m.insert(400);
+			
+			m.insert(20);
+			
+			m.print();
+			Iterator<Integer> it = m.iterator(0, 1000);
 			while(it.hasNext()) {
 				System.out.print(it.next() + ", ");
 			}
