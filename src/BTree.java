@@ -68,15 +68,11 @@ public class BTree {
 				int i = count-1;
 				while (i >= 0 && keys[i] > splitKey) {
 					keys[i+1] = keys[i];
+					children[i+2] = children[i+1];
 					i--;
 				}
 				keys[i+1] = splitKey;
-				int j = count;
-				while(j >=  0 && j > i) {
-					children[j+1] = children[j];
-					j--;
-				}
-				children[j+1] = splitChild;
+				children[i+2] = splitChild;
 				count++;
 				writeNode();
 				return;
@@ -197,7 +193,6 @@ public class BTree {
 			System.out.println ("Level: " + level);
 			System.out.println ("Count: " + count);
 			System.out.println ("Location: " + location);
-			System.out.println ("Split: " + split + ", splitKey: " + splitKey + ", splitChild: " + splitChild);
 			System.out.print("Keys: ");
 			for (int i = 0; i < keys.length; i++) {
 				System.out.print (keys[i] + ", ");
@@ -216,10 +211,9 @@ public class BTree {
 	int level = 0;
 	RandomAccessFile r;
 	Stack<Long> stack;
-	long head, splitChild;
+	long rootAddress, splitChild;
 	String name;
 	boolean split;
-	final long HEADER = 8;
 	
 	
 	public BTree(String n, int ord) throws IOException {
@@ -236,10 +230,9 @@ public class BTree {
 		dataLen = order*12;
 		r = new RandomAccessFile(name, "rw");
 		r.seek(0);
-		r.writeInt(dataLen);
 		r.writeInt(order);
-		head = 0;
-		r.writeLong(head);
+		rootAddress = 0;
+		r.writeLong(rootAddress);
 	}
 	
 	public BTree (String n) throws IOException {
@@ -252,9 +245,8 @@ public class BTree {
 		name = n;
 		r = new RandomAccessFile(name, "rw");
 		r.seek(0);
-		dataLen = r.readInt();
 		order = r.readInt();
-		head = r.readLong();
+		rootAddress = r.readLong();
 		setMaxMin();
 		stack = new Stack<>();
 	}
@@ -278,13 +270,13 @@ public class BTree {
 	public void insert (int k) throws IOException {
 		//insert	a	new	key	with	value	k	into	the	tree
 		
-		if (head == 0){
+		if (rootAddress == 0){
 			long loc = getFree();
 			root = new BTreeNode(loc);
 			root.insert(k);
-			head = loc;
-			r.seek(HEADER);
-			r.writeLong(head);
+			rootAddress = loc;
+			r.seek(4);
+			r.writeLong(rootAddress);
 			return;
 		}
 		if (!search(k)) {
@@ -298,9 +290,9 @@ public class BTree {
 	
 	public boolean search (int k) {
 		//if k	is	in	the	tree	return	true	otherwise	return	false
-		if (head != 0) {
+		if (rootAddress != 0) {
 			if (root == null) {
-				long l = HEADER + 8;
+				long l = 12;
 				root = new BTreeNode(l);
 				root.readNode();
 			}
@@ -320,7 +312,7 @@ public class BTree {
 	}
 	
 	public void print() {
-		if (head != 0) {
+		if (rootAddress != 0) {
 			if(root != null) {
 				root.readNode();
 				print(root);
