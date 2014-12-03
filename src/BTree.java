@@ -70,6 +70,7 @@ public class BTree {
 				root.insert(splitKey);
 				root.children[0] = n.location;
 				root.children[1] = splitChild;
+				root.writeNode();
 			}
 			
 		}
@@ -252,44 +253,24 @@ public class BTree {
 			r.writeLong(head);
 			return;
 		}
-		search(k);
-		BTreeNode n = new BTreeNode(stack.pop());
-		n.readNode();
-		n.insert(k);
-		
-	}
-	
-	/*
-	private void insert(int k, BTreeNode pop, long newLoc) throws IOException {
-		if (pop.getSplit()) {
-			if(pop.isFull()) {
-				BTreeNode newChild = pop.split(k, newLoc);
-				if (stack.empty()) {
-					int rootKey = newChild.firstKey(); 
-					newChild.shiftArrayLeft();
-					int[] rootKeys = new int[max];
-					rootKeys[0] = rootKey;
-					long[] rootChildren = new long[order];
-					rootChildren[0] = pop.getLoc();
-					rootChildren[1] = newChild.getLoc();
-					root = new BTreeNode(rootKeys, rootChildren, 0, 1);
-				}
-				else {
-					BTreeNode n = stack.pop();
-					n.setSplit();
-					insert(newChild.firstKey(), n, newChild.getLoc());
-				}
-			}
-			else 
-				pop.insert(k);
+		if (!search(k)) {
+			BTreeNode n = new BTreeNode(stack.pop());
+			n.readNode();
+			n.insert(k);
 		}
 	}
-*/
+	
+	
 	public boolean search (int k) {
 		//if k	is	in	the	tree	return	true	otherwise	return	false
 		if (head != 0) {
+			if (root == null) {
+				long l = HEADER + 8;
+				root = new BTreeNode(l);
+				root.readNode();
+			}
+			root.readNode();
 			BTreeNode n = root;
-			n.readNode();
 			stack.push(n.location);
 			while(n.children[0] != 0) {
 				int loc = n.locInNode(k);
@@ -305,7 +286,8 @@ public class BTree {
 	
 	public void print() {
 		if (head != 0) {
-			print(root);
+			if(root != null)
+				print(root);
 		}
 	}
 	
