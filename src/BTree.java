@@ -87,6 +87,7 @@ public class BTree {
 			BTreeNode n;
 			long[] newChildren;
 			long loc = getFree();
+			boolean leaf = children[0] == 0;
 			
 			int l = locInNode(splitKey);
 			int[] newKeys = new int[order];
@@ -102,9 +103,18 @@ public class BTree {
 			
 			keys = Arrays.copyOfRange(newKeys, 0, min);
 			keys = Arrays.copyOf(keys, max);
+			
 			newKeys = Arrays.copyOfRange(newKeys, min, order);
 			newKeys = Arrays.copyOf(newKeys, max);
-			if (children[0] != 0) {
+			splitKey = newKeys[0];
+			if (!leaf) {
+				int i = 1;
+				for (; i <= min; i++) {
+					newKeys[i-1] = newKeys[i];
+				}
+				newKeys[i] = 0;
+			}
+			if (!leaf) {
 				newChildren = new long[order+1];
 				m = 0;
 				for (int i = 0; i < newChildren.length; i++) {
@@ -132,18 +142,15 @@ public class BTree {
 			n.writeNode();
 			
 			split = true;
-			splitKey = n.keys[0];
 			splitChild = loc;
 			
 			if (stack.empty()) {
-				BTreeNode newRoot = new BTreeNode(location);
+				BTreeNode newRoot = new BTreeNode(getFree());
 				newRoot.keys[0] = newKeys[0];
-				location = getFree();
 				newRoot.children[0] = location;
 				newRoot.children[1] = loc;
 				newRoot.count = 1;
 				newRoot.writeNode();
-				writeNode();
 				root = newRoot;
 			}
 			else {
@@ -154,6 +161,7 @@ public class BTree {
 				
 		}
 
+		
 		private void writeNode() {
 			// TODO Auto-generated method stub
 			try {
@@ -402,20 +410,26 @@ public class BTree {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		try {
-			BTree m = new BTree("file.txt", 5);
+			BTree m = new BTree("file.txt", 3);
 			m.insert(100);
 			m.insert(50);
 			m.insert(75);
 			m.insert(125);
+			
 			m.insert(25);
 			m.insert(30);
+			m.print();
 			m.insert(60);
 			m.insert(150);
 			m.insert(400);
 			
 			m.insert(20);
+			m.insert(300);
+			m.insert(500);
+			m.insert(40);
+			m.insert(70);
 			
-			m.print();
+			
 			Iterator<Integer> it = m.iterator(0, 1000);
 			while(it.hasNext()) {
 				System.out.print(it.next() + ", ");
