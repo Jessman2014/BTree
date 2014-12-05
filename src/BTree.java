@@ -84,6 +84,7 @@ public class BTree {
 
 
 		public void split() {
+			Stack<Long> newStack = stack;
 			BTreeNode n;
 			long[] newChildren;
 			long loc = getFree();
@@ -112,11 +113,12 @@ public class BTree {
 				for (; i <= min; i++) {
 					newKeys[i-1] = newKeys[i];
 				}
-				newKeys[i] = 0;
+				newKeys[i-1] = 0;
 			}
 			if (!leaf) {
 				newChildren = new long[order+1];
 				m = 0;
+				l++;
 				for (int i = 0; i < newChildren.length; i++) {
 					if (i == l) {
 						newChildren[i] = splitChild;
@@ -138,7 +140,10 @@ public class BTree {
 			}
 			count = min;
 			writeNode();
-			n = new BTreeNode(newKeys, newChildren, loc, min+1);
+			if (leaf)
+				n = new BTreeNode(newKeys, newChildren, loc, min+1);
+			else
+				n = new BTreeNode(newKeys, newChildren, loc, min);
 			n.writeNode();
 			
 			split = true;
@@ -146,7 +151,7 @@ public class BTree {
 			
 			if (stack.empty()) {
 				BTreeNode newRoot = new BTreeNode(getFree());
-				newRoot.keys[0] = newKeys[0];
+				newRoot.keys[0] = splitKey;
 				newRoot.children[0] = location;
 				newRoot.children[1] = loc;
 				newRoot.count = 1;
@@ -196,7 +201,7 @@ public class BTree {
 			}
 		}
 
-		public void print() {
+		public void print(int level) {
 			// TODO Auto-generated method stub
 			System.out.println ("Level: " + level);
 			System.out.println ("Count: " + count);
@@ -216,7 +221,6 @@ public class BTree {
 	
 	BTreeNode root;
 	int order, max, min, dataLen, splitKey;
-	int level = 0;
 	RandomAccessFile r;
 	Stack<Long> stack;
 	long rootAddress, splitChild;
@@ -293,6 +297,7 @@ public class BTree {
 			n.insert(k);
 		}
 		split = false;
+		stack.clear();
 	}
 	
 	
@@ -323,32 +328,22 @@ public class BTree {
 		if (rootAddress != 0) {
 			if(root != null) {
 				root.readNode();
-				print(root);
+				print(root, 0);
 			}
 				
 		}
 	}
 	
-	private void print(BTreeNode b) {
-		b.print();
+	private void print(BTreeNode b, int level) {
+		b.print(level);
 		if (b.children[0] != 0) {
-			/*long loc = b.children[max];
-			if (loc != 0) {
-				BTreeNode n = new BTreeNode(loc);
-				n.readNode();
-				print(n);
-			}*/
 		
 			level++;
 			for (int i = 0; i <= b.count; i++) {
 				BTreeNode n = new BTreeNode(b.children[i]);
 				n.readNode();
-				n.print();
+				print(n, level);
 			}
-			BTreeNode n = new BTreeNode(b.children[0]);
-			n.readNode();
-			if (n.children[0] != 0)
-				print(n);
 		}
 	}
 	
@@ -418,17 +413,18 @@ public class BTree {
 			
 			m.insert(25);
 			m.insert(30);
-			m.print();
+			
 			m.insert(60);
 			m.insert(150);
 			m.insert(400);
 			
 			m.insert(20);
+			
 			m.insert(300);
 			m.insert(500);
 			m.insert(40);
 			m.insert(70);
-			
+			m.print();
 			
 			Iterator<Integer> it = m.iterator(0, 1000);
 			while(it.hasNext()) {
