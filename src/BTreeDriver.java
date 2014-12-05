@@ -18,6 +18,7 @@ public class BTreeDriver {
 
 			line = r.readLine();
 		}
+		b2.print();
 
 		b1.close();
 		b2.close();

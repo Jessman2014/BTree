@@ -31,6 +31,14 @@ public class BTree {
 		private int locInNode(int key) {
 			int i;
 			for (i = 0; i < count; i++) {
+				if(keys[i] > key) return i;
+			}
+			return count;
+		}
+		
+		private int keyInNode(int key) {
+			int i;
+			for (i = 0; i < count; i++) {
 				if(keys[i] >= key) return i;
 			}
 			return count;
@@ -156,6 +164,14 @@ public class BTree {
 				newRoot.count = 1;
 				newRoot.writeNode();
 				root = newRoot;
+				rootAddress = newRoot.location;
+				try {
+					r.seek(4);
+					r.writeLong(rootAddress);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			else {
 				BTreeNode parent = new BTreeNode(stack.pop());
@@ -256,10 +272,16 @@ public class BTree {
 		name = n;
 		r = new RandomAccessFile(name, "rw");
 		r.seek(0);
+		
 		order = r.readInt();
 		rootAddress = r.readLong();
 		setMaxMin();
+		dataLen = order*12;
 		stack = new Stack<>();
+		if(rootAddress != 0) {
+			root = new BTreeNode(rootAddress);
+			root.readNode();
+		}
 	}
 	
 	private void setMaxMin() {
@@ -307,6 +329,14 @@ public class BTree {
 				long l = 12;
 				root = new BTreeNode(l);
 				root.readNode();
+				rootAddress = l;
+				try {
+					r.seek(4);
+					r.writeLong(l);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			root.readNode();
 			BTreeNode n = root;
@@ -329,7 +359,11 @@ public class BTree {
 				root.readNode();
 				print(root, 0);
 			}
-				
+			else {
+				root = new BTreeNode(rootAddress);
+				root.readNode();
+				print(root, 0);
+			}
 		}
 	}
 	
@@ -358,7 +392,7 @@ public class BTree {
 			long loc = stack.pop();
 			currentLeaf = new BTreeNode(loc);
 			currentLeaf.readNode();
-			index = currentLeaf.locInNode(low);
+			index = currentLeaf.keyInNode(low);
 			highKey = high;
 		}
 		
@@ -397,6 +431,8 @@ public class BTree {
 	
 	
 	public void close() throws IOException {
+		r.seek(4);
+		r.writeLong(rootAddress);
 		r.close();
 	}
 	
@@ -423,13 +459,16 @@ public class BTree {
 			m.insert(500);
 			m.insert(40);
 			m.insert(70);
-			m.print();
+			
 			
 			Iterator<Integer> it = m.iterator(0, 1000);
 			while(it.hasNext()) {
 				System.out.print(it.next() + ", ");
 			}
 			m.close();
+			
+			BTree t = new BTree("file.txt");
+			t.print();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
