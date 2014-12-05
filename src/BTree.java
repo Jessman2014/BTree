@@ -84,7 +84,6 @@ public class BTree {
 
 
 		public void split() {
-			Stack<Long> newStack = stack;
 			BTreeNode n;
 			long[] newChildren;
 			long loc = getFree();
